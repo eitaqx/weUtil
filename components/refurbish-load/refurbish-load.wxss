@@ -1,0 +1,5 @@
+/* components/refurbish-load/refurbish-load.wxss */
+.scroll-view{position: absolute;top: 0;left: 0;right: 0;bottom: 0;background: #f6f6f6;z-index: 10;}
+.animate{transition: all .4s;}
+.refurbis-top{position: absolute;left: 50%;top: 0;z-index: 1;transform: translateX(-50%);width: 50%;}
+.load-bottom{position: absolute;bottom: 0;z-index: 1;}

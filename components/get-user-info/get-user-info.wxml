@@ -1,0 +1,13 @@
+<!--components/get-user-info/get-user-info.wxml-->
+<view class='layer {{userInfoStatus ? "layer-show" : "" }}' catchtouchmove='_empty'>
+  <view class='main' wx:if='{{userInfoStatus}}'>
+    <view class='padding text-center font-38'>授权提示</view>
+    <view class='padding color-6c'>
+      我们将获取您的基本信息：昵称、头像等
+    </view>
+    <view class='row text-center margin-t border-t'>
+      <view class='col border-r padding-tb' style='line-height: 36rpx;' hover-class='btn-active' bindtap='cancel'>拒绝</view>
+      <button class='col padding-tb color' hover-class='btn-active' open-type="getUserInfo" bindgetuserinfo="_updateUserInfo">允许</button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,17 @@
+<!--components/refurbish-load/refurbish-load.wxml-->
+<!-- 安卓 -->
+<image src='loading.png' mode='widthFix' class='refurbis-top' style='width: {{translateY/2}}%;'></image>
+<scroll-view 
+  scroll-y
+  class='scroll-view {{animateStatus ? "animate" : "" }}'
+  style='transform: translateY({{translateY || 0}}px);'
+  bindscrolltoupper='_upper'
+  bindscrolltolower='_lower'
+  bindtouchstart='_start'
+  bindtouchmove='_move'
+  bindtouchend='_end'
+  bindscroll='_scroll'
+>
+  <slot />
+</scroll-view>
+<view class='load-bottom'>上拉可看到我</view>

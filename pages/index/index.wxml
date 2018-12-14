@@ -1,0 +1,5 @@
+<!--index.wxml-->
+<nav-title> 
+  <navigator url='../logs/logs' style='line-height: 46px;text-align: center;' wx:for='{{50}}' wx:key>{{index}}、日志</navigator>
+</nav-title>
+
