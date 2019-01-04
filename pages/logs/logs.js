@@ -1,12 +1,11 @@
 //logs.js
-const util = require('../../utils/util.js')
-
+const app = getApp()
 Page({
   data: {
     logs: []
   },
   onLoad: function () {
-    util.setNavTitle({
+    app.util.setNavTitle({
       title: '启动日志',
       bgColor: '#3cd',
       color: '#fff',

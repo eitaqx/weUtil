@@ -1,135 +1,150 @@
-// 用户配置信息
-import config from './config';
-const utils = {
-  // 用户配置信息
-  config: config,
+
+import config from './config'
+class Util {
   /*
-  * @param {Object}
-  * url('map_address')
+  * 默认执行
   */
-  url: function (map = '') {
-    let userInfo = wx.getStorageSync('userInfo');
-    let session = '';
-    if (userInfo) session = '&plum_session_applet=' + userInfo.plum_session_applet + '&';
-    return config.url + 'suid=' + config.suid + (map ? '&map=' + map : '') + session;
-  },
+  constructor() {
+    // 配置信息
+    this.config = config
+    // 设置导航
+    wx.setNavigationBarTitle({
+      title: config.title || ''
+    })
+  }
   /*
-  * login
-  * @param {Object}
-  * getUserInfo(callBack)
+  * 后台地址
+  * @param {String}
   */
-  getUserInfo: function (fn = () => { }) {       // 登录
-    const _this = this;
-    wx.login({                          // 获取 code
-      success: login => {
-        if (!login.code) {
-          _this.toast('获取用户登录状态失败！');
-          return false;
-        }
+  url(map) {
+    let userInfo = wx.getStorageSync('userInfo')
+    return `${config.url}?suid=${config.suid}&appid=${config.appid}${userInfo ? `&plum_session_applet=${userInfo.plum_session_applet}` : ''}${map ? `&map=${map}` : ''}`
+  }
+  /*
+  * 登录
+  * @param {Function}
+  */
+  getUserInfo(cb = () => { }) {
+    wx.login({
+      success: res => {
+        wx.setStorageSync('userInfo', res)
         wx.request({
-          url: _this.url(),
+          url: this.url('applet_member_info'),
           data: {
-            map: 'applet_member_info',
-            code: login.code,
-            slient: 1,
+            code: res.code,
+            slient: 1
           },
-          success: info => {
-            if (info.data && info.data.ec == 200) {
-              let data = info.data.data;
-              if (!data.avatar) data.avatar = 'http://tiandiantong.oss-cn-beijing.aliyuncs.com/images/icon_photo.png';
-              if (!data.nickname) data.nickname = '用户昵称';
-              wx.setStorageSync('userInfo', data);
-              // fn(data);
-              _this.getWxInfo(fn, data);
+          success: e => {
+            // console.log(e)
+            if (e.data.ec === 200) {
+              let data = e.data.data
+              wx.setStorageSync('userInfo', data)
+              this.getWxInfo(cb, data)
             }
-            // else _this.toast('登录失败！');
+            else {
+              this.toast('微信登录失败，请重试')
+            }
           }
         })
       },
-      fail: function (err) {
-        // _this.toast('%c 用户code获取失败！' + err.errMsg);
+      fail: err => {
+        this.toast('微信登录失败，请重试')
       }
     })
-  },
+  }
   /*
-  * @param {Object}
-  * getWxInfo(callBack, userInfo)
+  * 获取用户信息
+  * @param {Function}
   */
-  getWxInfo: function (fn = () => { }, userInfo) {            // 同步用户信息
-    const _this = this;
-    // console.log(userInfo);
-    if (wx.canIUse('getUserInfo')) {                  // 授权是否可用
-      wx.getUserInfo({
-        withCredentials: true,
-        success: function (wxInfo) {
-          // console.log(wxInfo);
-          wx.request({
-            url: _this.url(),
-            data: {
-              map: 'applet_update_member_info',
-              avatar: wxInfo.userInfo.avatarUrl,
-              nickname: wxInfo.userInfo.nickName,
-              sex: wxInfo.userInfo.gender == 2 ? '女' : '男',
-              city: wxInfo.userInfo.city,
-              province: wxInfo.userInfo.province
-            },
+  getWxInfo(cb = () => { }, info) {
+    // 获取用户信息
+    wx.getSetting({
+      success: res => {
+        const app = getApp()
+        if (res.authSetting['scope.userInfo']) {
+          // 已经授权，可以直接调用 getUserInfo 获取头像昵称
+          wx.getUserInfo({
             success: res => {
-              if (res.data.ec == 200) {
-                wx.setStorageSync('userInfo', { userInfo: userInfo, wxInfo: wxInfo.userInfo });
-                fn({ userInfo: userInfo, wxInfo: wxInfo.userInfo });
+              if (res.errMsg === 'getUserInfo:ok') {
+                info.nickName = res.userInfo.nickName
+                info.avatarUrl = res.userInfo.avatarUrl
+                info.gender = res.userInfo.gender
+                wx.setStorageSync('userInfo', info)
+                cb({ userInfo: info, wxInfo: res.userInfo })
               }
-              else {
-                _this.toast('获取用户信息失败，正在重新获取');
-              }
+              else cb({ userInfo: info })
+              app.globalData.userInfo = info
             }
           })
-        },
-        fail: function () {
-          fn({ userInfo: userInfo });
         }
-      })
-    }
-    else {
-      fn({ userInfo: userInfo });
-      console.log('%c 您未同意授权', 'color: blue');
-    }
-  },
-  /*
-  * @param {Object}
-  * request('storageName', {map: '', query: ''}, res => {}, s)
-  * request({map: '', query: ''}, res => {})
-  */
-  request: function(n, d, f, s = 1){
-    if(typeof n === 'object'){
-      s = f;
-      f = d;
-      d = n;
-      n = '';
-    }
-    wx.request({
-      url: this.url,
-      data: d,
-      success: res => {
-        if(s && typeof n === 'string') wx.setStorage({
-          key: n,
-          data: res.data,
-          success: e => {
-            f(res.data);
-          }
-        });
-        else f(res.data);
-      },
-      fail: err => {
-        f(err);
+        else {
+          cb({ userInfo: info })
+          app.globalData.userInfo = info
+        }
       }
     })
-  },
+  }
   /*
-  * @param {Object} 
-  * setNavTitle({title: 'title', bgColor: '#3cd', color: '#fff', backShow: true})
+  * 后台交互
+  * @param {String, Object, Function, Boolean}
+  * @param {Object, Function, Boolean}
+  * @param {String, Function, Boolean}    // 暂未提供解决办法
+  * @param {Object, Boolean}              // 暂未提供解决办法
   */
-  setNavTitle: function(o){
-    if(typeof o === 'string') o = {
+  request(s, o, f, b = true) {
+    let userInfo = wx.getStorageSync('userInfo')
+    if (!userInfo) {
+      this.getUserInfo(res => {
+        this.request(s, o, f, b)
+      })
+      return false
+    }
+    if (typeof s === 'object') {
+      b = typeof f === 'function' || typeof f === 'undefined'
+      f = o
+      o = s
+      s = ''
+    }
+    if (b) {
+      wx.showLoading({
+        title: '加载中...'
+      })
+      wx.showNavigationBarLoading()
+    }
+    wx.request({
+      url: this.url(),
+      data: o,
+      success(res) {
+        if (s) {
+          wx.setStorageSync(s, res.data)
+          f(res.data)
+        }
+        else {
+          f(res.data)
+        }
+      },
+      fail(err) {
+        let data = wx.getStorageSync(s)
+        if (s && data) {
+          if (typeof data === 'object') data.err = 'request:fail'
+          f(data)
+        }
+      },
+      complete(com) {
+        if (b) {
+          wx.hideLoading()
+          wx.hideNavigationBarLoading()
+        }
+      }
+    })
+  }
+  /*
+  * 设置导航title 和 color
+  * @param {Object} 
+  * Object => {title: 'title', bgColor: '#3cd', color: '#fff', backShow: true}
+  */
+  setNavTitle(o) {
+    if (typeof o === 'string') o = {
       title: o
     }
     wx.setNavigationBarTitle({
@@ -140,79 +155,112 @@ const utils = {
     pageThis.setData({
       setNavigationStyle: o
     })
-  },
+  }
+
   /*
-  * @param {Object}
-  * toast('提示', 2000, 'success');
+  * 提示信息
+  * @param {String, Number, String}
+  * @param {String, String}
   */
-  toast: function(title = 'Toast', time = 2000, icon = 'none'){
+  toast(title = 'Toast', duration = 2000, icon = 'none') {
+    if (isNaN(parseInt(duration))) {
+      icon = duration
+      duration = 2000
+    }
     wx.showToast({
       icon: icon,
       title: title,
-      duration: time
-    });
-    setTimeout(() => {
-      wx.hideToast();
-    }, time);
-  },
+      duration: duration
+    })
+  }
   /*
-  * @param {Object}
-  * arrSplit(arr, num)
+  * 一维数组转化为多维数组
+  * @param {Array, Number}
   */
-  arrSplit: function(arr, num){
-    var newArr = [];
-    while(newArr.length != 0){
-      newArr.push(arr.splice(0, num));
+  arrSplice(arr, num = 99) {
+    if (!num) console.log('%c arrSplce: num is undefined', 'color: #f00;line-height: 36px;')
+    let newArr = []
+    // 防止改变原数组
+    let copyArr = this.deepCopy(arr)
+    while (copyArr.length != 0) {
+      newArr.push(copyArr.splice(0, num));
     }
     return newArr;
-  },
+  }
   /*
-  * @param {Object}
-  * upImageFile({url: 'test.com', filePath: ['1.png', '2.png'], name: 'image', success: res => {}, fail: err => {} })
+  * 深拷贝
+  * @param {Object / Array}
   */
-  uploadFile: function (obj, i = 0, fileUrl = [], err = 0) {
-    if (typeof obj.filePath === 'string') obj.filePath = [obj.filePath];
+  deepCopy(obj) {
+    let o = Array.isArray(obj) ? [] : {}
+    if (obj && typeof obj === 'object') {
+      for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          if (obj[key] && typeof obj[key] === 'object')
+            o[key] = this.deepCopy(obj[key])
+          else
+            o[key] = obj[key]
+        }
+      }
+    }
+    return o
+  }
+  /*
+  * 多图片上传
+  * @param {Object}
+  * Object 参数参考 微信API https://developers.weixin.qq.com/miniprogram/dev/api/wx.uploadFile.html
+  */
+  uploadFile(obj, i = 0, fileUrl = [], err = 0) {
+    if (typeof obj.filePath === 'string') obj.filePath = [obj.filePath]
     wx.uploadFile({
       url: obj.url,
       filePath: obj.filePath[i],
       name: obj.name || "image",
+      header: obj.header || {},
+      formData: obj.formData || {},
       success: res => {
-        var resData = res.data;
+        let resData = res.data
         try {
-          resData = JSON.parse(resData);
+          resData = JSON.parse(resData)
         }
         catch (err) {
-          resData = JSON.parse(resData.substring(1));
+          resData = JSON.parse(resData.substring(1))
         }
-        if (resData.ec === 200) {                       // 判断上传是否成功，根据后台返回的状态判定
-          i++;
-          fileUrl.push(resData.data.path);              // 后台返回图片路径
+        // 判断上传是否成功，根据后台返回的状态判定
+        if (resData.ec === 200) {
+          i++
+          // 后台返回图片路径
+          fileUrl.push(resData.data.path)
           if (i === obj.filePath.length) {
-            if (obj.success) obj.success({ msg: 'uploadFile:ok', data: fileUrl, statusCode: res.statusCode });
+            if (obj.success) obj.success({ msg: 'uploadFile:ok', data: fileUrl, statusCode: res.statusCode })
           }
           else {
-            this.uploadFile(obj, i, fileUrl);
+            this.upImageFile(obj, i, fileUrl)
           }
         }
         else {
-          err++;
-          if (err <= 3) this.uploadFile(obj, i, fileUrl, err);
+          err++
+          if (err <= 3) this.upImageFile(obj, i, fileUrl, err)
           else {
-            console.log('%c 返回信息：', 'color: #f00', resData)
-            console.log('%c 请注意: 请求成功时，后台返回的信息可能与此函数中的配置不一致，注意修改', 'color: blue');
+            console.log('%c 返回信息：', 'color: #f00; line-height: 36px;', resData)
+            console.log('%c 请注意: 请求成功时，后台返回的信息可能与此函数中的配置不一致，注意修改', 'color: blue;line-height: 36px;')
           }
         }
       },
       fail: err => {
-        err++;
-        if (err <= 3) this.uploadFile(obj, i, fileUrl, err);
+        err++
+        if (err <= 3) this.upImageFile(obj, i, fileUrl, err)
         else {
-          var errObj = { err, i, fileUrl };
-          if (obj.fail) obj.fail(errObj);
-          console.log('%c 图片上传失败，请注意检查...', 'color: #f00', errObj);
+          let errObj = { err, i, fileUrl }
+          if (obj.fail) obj.fail(errObj)
+          console.log('%c uploadFile:fail', 'color: #f00', errObj)
         }
+      },
+      complete: com => {
+        if (obj.complete) obj.complete(com)
       }
     })
   }
 }
-module.exports = utils;
+
+export default new Util()
