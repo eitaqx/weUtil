@@ -17,8 +17,9 @@ class Util {
   * @param {String}
   */
   url(map) {
-    let userInfo = wx.getStorageSync('userInfo')
-    return `${config.url}?suid=${config.suid}&appid=${config.appid}${userInfo ? `&plum_session_applet=${userInfo.plum_session_applet}` : ''}${map ? `&map=${map}` : ''}`
+    // let userInfo = wx.getStorageSync('userInfo')
+    // return `${config.url}?suid=${config.suid}&appid=${config.appid}${userInfo ? `&plum_session_applet=${userInfo.plum_session_applet}` : ''}${map ? `&map=${map}` : ''}`
+    return `${config.url}?suid=${config.suid}&appid=${config.appid}${config.session ? `&plum_session_applet=${config.session}` : ''}${map ? `&map=${map}` : ''}`
   }
   /*
   * 登录
@@ -39,6 +40,7 @@ class Util {
             if (e.data.ec === 200) {
               let data = e.data.data
               wx.setStorageSync('userInfo', data)
+              config.session = data.plum_session_applet
               this.getWxInfo(cb, data)
             }
             else {
@@ -88,15 +90,22 @@ class Util {
   * 后台交互
   * @param {String, Object, Function, Boolean}
   * @param {Object, Function, Boolean}
-  * @param {String, Function, Boolean}    // 暂未提供解决办法
-  * @param {Object, Boolean}              // 暂未提供解决办法
+  * @param {String, Function, Boolean}    // 暂无
+  * @param {Object, Boolean}              // 暂无
   */
   request(s, o, f, b = true) {
-    let userInfo = wx.getStorageSync('userInfo')
-    if (!userInfo) {
-      this.getUserInfo(res => {
-        this.request(s, o, f, b)
-      })
+    // let userInfo = wx.getStorageSync('userInfo')
+    if(!config.session){                // 如果每次进入都更新用户信息
+    // if (!userInfo) {                    // 有缓存的信息，则不需要更新用户信息
+      if (this.temporaryStorageRequestParam) this.temporaryStorageRequestParam.push({ s, o, f, b })
+      else {
+        this.temporaryStorageRequestParam = [{ s, o, f, b }]
+        this.getUserInfo(res => {
+          for (let i of this.temporaryStorageRequestParam) {
+            this.request(i.s, i.o, i.f, i.b)
+          }
+        })
+      }
       return false
     }
     if (typeof s === 'object') {
