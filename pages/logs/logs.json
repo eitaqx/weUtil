@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "查看启动日志",
   "usingComponents": {
-    "nav-title": "../../components/nav-title/nav-title"
+    "nav-title": "../../components/nav-title/nav-title",
+    "get-user": "../../components/get-user/get-user"
   }
 }

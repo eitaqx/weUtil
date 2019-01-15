@@ -6,3 +6,4 @@
   </block>
 </view>
 </nav-title>
+<get-user />

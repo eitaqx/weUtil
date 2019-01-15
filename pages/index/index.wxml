@@ -1,7 +1,29 @@
 <!--index.wxml-->
 <nav-title> 
-  <view class='container cloak'>
-    <navigator url='../logs/logs' style='line-height: 46px;text-align: center;' wx:for='{{20}}' wx:key>{{index}}、日志</navigator>
+  <view class='container cloak' bindtap='show'>
+    <navigator 
+      class='border-b padding text-center bg-warning text-white show' 
+      url='../logs/logs?id=1'
+    >
+      日志
+    </navigator>
+  </view>
+  <view 
+    class='padding border-b text-center text-white bg-{{item}}' 
+    hover-class='bg-{{item}}-hover' 
+    wx:for='{{bgColors}}' wx:key
+  >
+    {{item}}
+  </view>
+
+  <view class='popup {{show ? "show" : "" }}' bindtap='show'>
+    <view class='popup-container'>1231232</view>
+  </view>
+  <view 
+    style='margin: 30rpx 20%;line-height: 88rpx;' 
+    class='margin border text-center'
+  >
+    badge <view class='badge badge-danger badge-circle'>1111</view>
   </view>
 </nav-title>
 

@@ -1,5 +1,9 @@
 
 import config from './config'
+var QQMapWX = require('./qqmap-wx-jssdk.min.js');
+var qqmapsdk = new QQMapWX({
+  key: config.mapKey
+});
 class Util {
   /*
   * 默认执行
@@ -7,6 +11,7 @@ class Util {
   constructor() {
     // 配置信息
     this.config = config
+    this.globalData = {}
     // 设置导航
     wx.setNavigationBarTitle({
       title: config.title || ''
@@ -267,6 +272,42 @@ class Util {
       },
       complete: com => {
         if (obj.complete) obj.complete(com)
+      }
+    })
+  }
+  /*
+  * 地址逆解析
+  * @param {Function, Boolean}
+  */
+  getPosition(cb = () => { }, b = 1) {
+    let position = this.globalData.position
+    if (position && b) {
+      cb(position)
+      return;
+    }
+    wx.getLocation({
+      success: res => {
+        qqmapsdk.reverseGeocoder({//根据坐标获取位置详细信息
+          location: {
+            latitude: res.latitude,
+            longitude: res.longitude
+          },
+          complete: e => {
+            let data = {
+              lat: res.latitude,
+              lng: res.longitude,
+            }
+            if (e.status === 0) {
+              data.result = e.result
+              data.status = 0
+            }
+            this.globalData.position = data
+            cb(data)
+          }
+        })
+      },
+      fail: err => {
+        this.toast('获取位置信息失败')
       }
     })
   }

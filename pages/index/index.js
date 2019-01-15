@@ -8,7 +8,13 @@ Page({
     motto: 'Hello World',
     userInfo: {},
     hasUserInfo: false,
-    canIUse: wx.canIUse('button.open-type.getUserInfo')
+    canIUse: wx.canIUse('button.open-type.getUserInfo'),
+    bgColors: ['white', 'primary', 'secondary', 'success', 'info', 'warning', 'danger', 'light', 'dark', 'white']
+  },
+  show(){
+    this.setData({
+      show: !this.data.show
+    })
   },
   //事件处理函数
   bindViewTap: function() {
